@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analog Stopwatch</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            margin: 0;
+            background: #000; /* Set background to solid black */
+        }
+
+        .heading {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .stopwatch-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stopwatch {
+            text-align: center;
+            z-index: 1;
+            position: relative;
+        }
+
+        .clock {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border: 10px solid #444;
+            border-radius: 50%;
+            background-color: #111;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        .number {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+            transform: translate(-50%, -50%);
+        }
+
+        .hand {
+            position: absolute;
+            left: 50%;
+            transform-origin: bottom center;
+        }
+
+        .hand.hour, .hand.minute, .hand.second, .hand.millisecond {
+            border-radius: 50%;
+            background: linear-gradient(to bottom, #444, #222);
+        }
+
+        .hand.hour {
+            height: 80px;
+            width: 8px;
+            top: 40px;
+            background: linear-gradient(to bottom, #666, #333);
+        }
+
+        .hand.minute {
+            height: 110px;
+            width: 6px;
+            top: 20px;
+            background: linear-gradient(to bottom, #888, #555);
+        }
+
+        .hand.second {
+            height: 130px;
+            width: 4px;
+            top: 10px;
+            background: linear-gradient(to bottom, #ff4d4d, #cc0000);
+        }
+
+        .hand.millisecond {
+            height: 140px;
+            width: 2px;
+            top: 5px;
+            background: linear-gradient(to bottom, #4d79ff, #003d99);
+        }
+
+        .time-display {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .buttons {
+            margin-bottom: 20px;
+        }
+
+        .buttons button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+            border: none;
+            background-color: #444;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .buttons button:hover {
+            background-color: #555;
+        }
+
+        .buttons button:active {
+            transform: scale(0.95);
+        }
+
+        .laps-section {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #222;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            overflow-y: auto; /* Allows scrolling if the list grows too long */
+        }
+
+        .laps-section h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        }
+
+        .laps ol {
+            list-style-type: decimal;
+            padding-left: 20px;
+            text-align: left;
+            color: #fff;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="heading">Analog Stopwatch Watch Made by Prince Yadav</div>
+    <div class="stopwatch-container">
+        <div class="stopwatch">
+            <div class="clock">
+                <!-- Numbers for the clock face -->
+                <div class="number" style="top: 5%; left: 50%;">12</div>
+                <div class="number" style="top: 18%; left: 82%;">1</div>
+                <div class="number" style="top: 50%; left: 95%;">3</div>
+                <div class="number" style="top: 82%; left: 82%;">5</div>
+                <div class="number" style="top: 95%; left: 50%;">6</div>
+                <div class="number" style="top: 82%; left: 18%;">7</div>
+                <div class="number" style="top: 50%; left: 5%;">9</div>
+                <div class="number" style="top: 18%; left: 18%;">11</div>
+
+                <div id="hour-hand" class="hand hour"></div>
+                <div id="minute-hand" class="hand minute"></div>
+                <div id="second-hand" class="hand second"></div>
+                <div id="millisecond-hand" class="hand millisecond"></div>
+            </div>
+            <div class="time-display" id="time-display">00:00:00.000</div>
+            <div class="buttons">
+                <button id="toggle">Start</button>
+                <button id="reset">Reset</button>
+                <button id="lap">Lap</button>
+            </div>
+        </div>
+
+        <div class="laps-section">
+            <h2>Lap Times</h2>
+            <div class="laps" id="laps">
+                <ol></ol>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let startTime, updatedTime, difference = 0;
+        let timerId, running = false;
+        let lapCount = 0;
+
+        const hourHand = document.getElementById('hour-hand');
+        const minuteHand = document.getElementById('minute-hand');
+        const secondHand = document.getElementById('second-hand');
+        const millisecondHand = document.getElementById('millisecond-hand');
+        const timeDisplay = document.getElementById('time-display');
+        const lapsElement = document.getElementById('laps').querySelector('ol');
+        const toggleButton = document.getElementById('toggle');
+
+        toggleButton.addEventListener('click', toggleTimer);
+        document.getElementById('reset').addEventListener('click', resetTimer);
+        document.getElementById('lap').addEventListener('click', recordLap);
+
+        function toggleTimer() {
+            if (!running) {
+                startTimer();
+            } else {
+                stopTimer();
+            }
+        }
+
+        function startTimer() {
+            running = true;
+            startTime = Date.now() - difference;
+            timerId = setInterval(updateClock, 10);
+            toggleButton.textContent = 'Stop'; // Change button text to "Stop"
+        }
+
+        function stopTimer() {
+            running = false;
+            clearInterval(timerId);
+            difference = Date.now() - startTime;
+            toggleButton.textContent = 'Start'; // Change button text to "Start"
+        }
+
+        function resetTimer() {
+            running = false;
+            clearInterval(timerId);
+            difference = 0;
+            lapCount = 0;
+            resetClock();
+            timeDisplay.textContent = "00:00:00.000";
+            lapsElement.innerHTML = "";
+            toggleButton.textContent = 'Start'; // Reset button text to "Start"
+        }
+
+        function recordLap() {
+            if (running) {
+                lapCount++;
+                const lapTime = formatTime(difference);
+                const lapItem = document.createElement('li');
+                lapItem.textContent = `Lap ${lapCount}: ${lapTime}`;
+                lapsElement.appendChild(lapItem);
+            }
+        }
+
+        function updateClock() {
+            updatedTime = Date.now();
+            difference = updatedTime - startTime;
+
+            const hours = Math.floor((difference / (1000 * 60 * 60)) % 12);
+            const minutes = Math.floor((difference / (1000 * 60)) % 60);
+            const seconds = Math.floor((difference / 1000) % 60);
+            const milliseconds = difference % 1000;
+
+            // Update hands
+            hourHand.style.transform = `translateX(-50%) rotate(${(hours + minutes / 60) * 30}deg)`;
+            minuteHand.style.transform = `translateX(-50%) rotate(${(minutes + seconds / 60) * 6}deg)`;
+            secondHand.style.transform = `translateX(-50%) rotate(${(seconds + milliseconds / 1000) * 6}deg)`;
+            millisecondHand.style.transform = `translateX(-50%) rotate(${milliseconds * 0.36}deg)`;
+
+            // Update display
+            timeDisplay.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}.${pad(milliseconds, 3)}`;
+        }
+
+        function resetClock() {
+            hourHand.style.transform = 'translateX(-50%) rotate(0deg)';
+            minuteHand.style.transform = 'translateX(-50%) rotate(0deg)';
+            secondHand.style.transform = 'translateX(-50%) rotate(0deg)';
+            millisecondHand.style.transform = 'translateX(-50%) rotate(0deg)';
+        }
+
+        function pad(num, size = 2) {
+            return num.toString().padStart(size, '0');
+        }
+
+        function formatTime(milliseconds) {
+            const hours = Math.floor((milliseconds / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((milliseconds / (1000 * 60)) % 60);
+            const seconds = Math.floor((milliseconds / 1000) % 60);
+            const millis = milliseconds % 1000;
+            return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}.${pad(millis, 3)}`;
+        }
+    </script>
+</body>
+
+</html>
